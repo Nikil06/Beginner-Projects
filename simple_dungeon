@@ -1,0 +1,89 @@
+import random
+from typing import NewType
+
+########################################################################
+# Board
+########################################################################
+Board = NewType('Board', list[list[int]])
+
+def generate_board(width: int, height: int) -> Board:
+    board_array = [[0 for _ in range(width)] for _ in range(height)]
+    return Board(board_array)
+
+def is_cell_on_board(x: int, y: int, board: Board) -> bool:
+    return 0 <= x < len(board[0]) and 0 <= y < len(board)
+
+def get_cell_on_board(x: int, y: int, board: Board) -> int | None:
+    if is_cell_on_board(x, y, board):
+        return board[y][x]
+    return None
+
+def select_random_cell_on_board(board: Board) -> tuple[int, int]:
+    x = random.randint(0 , len(board[0]) - 1)
+    y = random.randint(0 , len(board) - 1)
+    return x, y
+
+def mark_cell_on_board(x: int, y: int, _board: Board, new_value: int) -> Board:
+    board = Board(_board.copy())
+    if is_cell_on_board(x, y, board):
+        board[y][x] = new_value
+    return board
+
+def get_neighbours(x, y, board):
+    neighbours = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+    valid_neighbours = []
+
+    for neighbour in neighbours:
+        if is_cell_on_board(*neighbour, board) and get_cell_on_board(*neighbour, board) == 0:
+            valid_neighbours.append(neighbour)
+
+    return valid_neighbours
+
+########################################################################
+# Dungeon Generation
+########################################################################
+
+def generate_dungeon(width, height, max_rooms):
+    board = generate_board(width, height)
+    home_cell = select_random_cell_on_board(board)
+    board = mark_cell_on_board(*home_cell, _board=board, new_value=2)
+
+    current_cell = home_cell
+    player_path = [home_cell]
+
+    for i in range(max_rooms):
+        if random.random() > 0.75:
+            continue
+
+        neighbours = get_neighbours(*current_cell, board=board)
+
+        if not neighbours:
+            break
+
+        next_cell = random.choice(neighbours)
+        board = mark_cell_on_board(*next_cell, _board=board, new_value=1)
+        current_cell = next_cell
+        player_path.append(current_cell)
+
+    board = mark_cell_on_board(*current_cell, _board=board, new_value=3)
+
+    return board, player_path
+
+def visualize_dungeon(board):
+    symbol_map = {
+        0: '.',  # Empty space
+        1: 'R',  # Room
+        2: 'S',  # Start (home cell)
+        3: 'B'   # Boss room
+    }
+
+    for row in board:
+        for cell in row:
+            print(symbol_map.get(cell, ' '), end=' ')
+        print()
+
+dungeon_board, dungeon_path = generate_dungeon(8, 8, 20)
+print("Final ", "-" * 44)
+visualize_dungeon(dungeon_board)
+print("-" * 50)
+print(dungeon_path)
